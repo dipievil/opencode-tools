@@ -4,7 +4,8 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-VERSION="0.3.1"
+VERSION="0.3.2"
+CURRENT_VERSION="not-installed"
 
 SOURCE_SCRIPTS_DIR="$(cd "$(dirname "$0")" && pwd)"
 SOURCE_AGENTS_DIR="$(cd "${SOURCE_SCRIPTS_DIR}/../agents" && pwd)"
@@ -31,6 +32,8 @@ SYSTEM_LOG_DIR=""
 SYSTEM_VERSIONFILE_PATH=""
 SYSTEM_JOBS_DIR=""
 
+
+
 usage() {
   cat <<EOF
 OpenCode Cron System Setup
@@ -43,6 +46,7 @@ Usage:
 Options:
   --project-dir <path>  Install into the given project (must contain .opencode/)
   --help                Show this help message
+  --force               Force install even if the same version is already installed
 EOF
 }
 
@@ -153,21 +157,19 @@ ensure_jq
 
 
 if [ -f "${SYSTEM_VERSIONFILE_PATH}" ]; then
+  CURRENT_VERSION="$(cat "${SYSTEM_VERSIONFILE_PATH}" | sed 's/version: //')"
+  echo "[INFO] Current version is ${CURRENT_VERSION}"
   if [ "$(cat "${SYSTEM_VERSIONFILE_PATH}")" = "version: ${VERSION}" ]; then
     if [ "${FORCE_INSTALL}" = true ]; then
-      echo "[INFO] Force install enabled. Reinstalling cron system even though it's already up to date."
+      echo "[WARN] Force install enabled. Reinstalling cron system even though it's already up to date."
     else
-      echo "[SKIP] Cron system already set up ($(cat "${SYSTEM_VERSIONFILE_PATH}"))"
+      echo "[SKIP] Cron system already set up (${CURRENT_VERSION})"
+      exit 0
     fi
-    exit 0
   fi
 fi
 
-current_version="not-installed"
-if [ -f "${SYSTEM_VERSIONFILE_PATH}" ]; then
-  current_version="$(cat "${SYSTEM_VERSIONFILE_PATH}")"
-fi
-echo "[INFO] Installing new version. New version: ${VERSION}, Current version: ${current_version}"
+echo "[INFO] Installing new version. New version: ${VERSION}"
 
 mkdir -p "${SYSTEM_CONFIG_DIR}" "${SYSTEM_LOG_DIR}" "${SYSTEM_SCRIPTS_DIR}" "${OC_AGENTS_DIR}" "${OC_TOOLS_DIR}" "${SYSTEM_JOBS_DIR}"
 [ -f "${SYSTEM_STATEFILE_PATH}" ] || echo '{}' > "${SYSTEM_STATEFILE_PATH}"

@@ -8,8 +8,12 @@ permission:
     "*/.opencode/cronjobs/**": allow
   edit:
     "*": deny
-    ".opencode/cronjobs/*.md": allow
-    "*/.opencode/cronjobs/*.md": allow
+    ".opencode/cronjobs/jobs*.md": allow
+    "*/.opencode/cronjobs/jobs*.md": allow
+    ".opencode/cronjobs/jobs/jobs*.md": allow
+    "*/.opencode/cronjobs/jobs/jobs*.md": allow
+    ".opencode/cronjobs/.state.json": allow
+    "*/.opencode/cronjobs/.state.json": allow
   glob:
     "*": allow
   grep:

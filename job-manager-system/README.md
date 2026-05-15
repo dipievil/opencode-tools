@@ -45,6 +45,7 @@ description: Run system health check
 project_folder: ~/repos/my-project
 schedule: hourly
 enabled: false
+branch: main
 tags: [monitoring]
 model: opencode/big-pickle
 agent: cron-manager
@@ -62,7 +63,7 @@ df -h
 free -h
 ```
 
-- **Frontmatter**: name, project_folder, schedule (hourly/daily/weekly or custom), enabled (true/false), model, agent
+- **Frontmatter**: name, project_folder, schedule (hourly/daily/weekly or custom), enabled (true/false), branch, model, agent
 - **## Instructions**: Prompt sent to `opencode run` for AI execution
 - **## Commands**: Shell commands executed directly (avoids AI cost). Takes priority over Instructions.
 
