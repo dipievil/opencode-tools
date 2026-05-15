@@ -1,0 +1,6 @@
+# Local cron job files (user config, not repo)
+cronjobs/
+
+# Logs
+logs/
+*.log
