@@ -9,13 +9,14 @@ STATE_FILE="${CONFIG_DIR}/.state.json"
 LOG_DIR="${CONFIG_DIR}/logs"
 CRON_PREFIX="opencode-"
 OPCODE_BIN="opencode"
+JQ_BIN="/usr/bin/jq"
 DEFAULT_MODEL="opencode/big-pickle"
 TARGET_JOB="${1:-}"
 TARGET_BRANCH="${2:-}"
 mkdir -p "${LOG_DIR}"
 [ -f "${STATE_FILE}" ] || echo '{}' > "${STATE_FILE}"
 
-# Cleanup old logs and temp files (older than 2 days)
+
 find "${LOG_DIR}" -type f -name "*.log" -mtime +2 -exec rm -f {} + 2>/dev/null || true
 find /tmp -type f -name "opencode-cron-*" -mtime +2 -exec rm -f {} + 2>/dev/null || true
 
@@ -154,7 +155,7 @@ for job_file in "${JOBS_DIR}"/*.md; do
   rm -f "${prompt_file}"
 
   tmp=$(mktemp)
-  jq --arg name "${cron_name}" \
+  "${JQ_BIN}" --arg name "${cron_name}" \
      --arg now "$(date -Iseconds)" \
      --arg exit "${exit_code}" \
      '.[$name] = {last_run: $now, last_exit: ($exit | tonumber)}' \
