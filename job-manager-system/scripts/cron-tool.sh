@@ -8,6 +8,7 @@ LOG_DIR="${CONFIG_DIR}/logs"
 CRON_PREFIX="opencode-"
 CRON_RUNNER="${SCRIPT_DIR}/cron-runner.sh"
 CRON_COMMENT="# OpenCode cron job:"
+JQ_BIN="${HOME}/.local/bin/jq"
 
 usage() {
   cat <<EOM
@@ -105,7 +106,7 @@ list_jobs() {
     cron=$(job_cron "${job_file}")
     enabled=$(job_enabled "${job_file}")
     cron_name="${CRON_PREFIX}${name}"
-    last_run=$(jq -r ".[\"${cron_name}\"].last_run // \"-\"" "${STATE_FILE}" 2>/dev/null)
+    last_run=$(${JQ_BIN} -r ".[\"${cron_name}\"].last_run // \"-\"" "${STATE_FILE}" 2>/dev/null)
     last_run_short="${last_run:0:19}"
     printf "%-25s %-20s %-10s %s\n" "${name}" "${cron}" "${enabled}" "${last_run_short}"
   done
@@ -124,8 +125,8 @@ show_status() {
     project_folder=$(get_job_field "${job_file}" project_folder)
     [ -z "${project_folder}" ] && project_folder="${HOME}"
     cron_name="${CRON_PREFIX}${name}"
-    last_run=$(jq -r ".[\"${cron_name}\"].last_run // \"never\"" "${STATE_FILE}" 2>/dev/null)
-    last_exit=$(jq -r ".[\"${cron_name}\"].last_exit // \"-\"" "${STATE_FILE}" 2>/dev/null)
+    last_run=$(${JQ_BIN} -r ".[\"${cron_name}\"].last_run // \"never\"" "${STATE_FILE}" 2>/dev/null)
+    last_exit=$(${JQ_BIN} -r ".[\"${cron_name}\"].last_exit // \"-\"" "${STATE_FILE}" 2>/dev/null)
 
     echo "Job:           ${name}"
     echo "Description:   ${description}"
