@@ -4,7 +4,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-VERSION="0.1.0"
+VERSION="0.1.1"
 CURRENT_VERSION="not-installed"
 
 SOURCE_SCRIPTS_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -99,6 +99,7 @@ detect_project_root() {
       SYSTEM_SKILL_DIR="${OPENCODE_DIR}/skills/trello-board"
       SYSTEM_SCRIPTS_DIR="${SYSTEM_SKILL_DIR}/scripts"
       SYSTEM_VERSIONFILE_PATH="${SYSTEM_SKILL_DIR}/.version"
+      SYSTEM_ENV_FILE="${SYSTEM_SKILL_DIR}/.env"
 
       OC_SKILLS_DIR="${OPENCODE_DIR}/skills"
       OC_TOOLS_DIR="${OPENCODE_DIR}/tools"
@@ -148,6 +149,18 @@ fi
 if [ -f "${SOURCE_TOOLS_DIR}/trello-tool.ts" ]; then
   cp "${SOURCE_TOOLS_DIR}/trello-tool.ts" "${OC_TOOLS_DIR}/trello-tool.ts"
   echo "[OK] Installed opencode custom tool: trello-tool"
+fi
+
+# Create an empty .env file if it doesn't exist
+if [ ! -f "${SYSTEM_ENV_FILE}" ]; then
+  touch "${SYSTEM_ENV_FILE}"
+  echo "TRELLO_API_KEY=your_trello_api_key_here" >> "${SYSTEM_ENV_FILE}"
+  echo "TRELLO_TOKEN=your_trello_token_here" >> "${SYSTEM_ENV_FILE}"
+  echo "TRELLO_BOARD_ID=your_trello_board_id_here" >> "${SYSTEM_ENV_FILE}"
+  echo "[OK] Created environment file: ${SYSTEM_ENV_FILE}"
+  echo "[WARN] Please update ${SYSTEM_ENV_FILE} with your Trello API key, token, and board ID before using the tool."
+else
+  echo "[INFO] Environment file already exists: ${SYSTEM_ENV_FILE}"
 fi
 
 echo "version: ${VERSION}" > "${SYSTEM_VERSIONFILE_PATH}"
