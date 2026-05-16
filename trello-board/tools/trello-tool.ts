@@ -44,8 +44,15 @@ interface TrelloCard {
 }
 
 function detectProjectRoot(): string {
-  let dir = process.cwd()
+  // Primary: derive from this file's location (.opencode/tools/ -> project root)
+  const selfDir = dirname(import.meta.path)
+  const candidate = dirname(dirname(selfDir))
+  if (existsSync(join(candidate, ".opencode"))) {
+    return candidate
+  }
 
+  // Fallback: walk up from CWD (original behaviour)
+  let dir = process.cwd()
   while (dir !== "/") {
     if (existsSync(join(dir, ".opencode"))) {
       return dir
