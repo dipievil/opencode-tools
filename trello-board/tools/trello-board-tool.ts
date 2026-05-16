@@ -7,6 +7,13 @@ interface TrelloLabel {
   color: string
 }
 
+interface TrelloCover {
+  id: string
+  color: string
+  size: string
+  brightness: string
+}
+
 interface TrelloBadges {
   attachmentsByType: {
     trello: {
@@ -41,8 +48,11 @@ interface TrelloCard {
   cover: TrelloCover
 }
 
-function run(worktree: string, args: string[]): string {
-  const scriptPath = `${worktree}/.opencode/skills/trello-board/scripts/trello-call.sh`
+function run(args: string[]): string {
+  const scriptPath = process.env.TRELLO_CALL_SCRIPT_PATH
+  if (!scriptPath) {
+    throw new Error("TRELLO_CALL_SCRIPT_PATH is not set. Run the trello-board setup.sh to configure the tool.")
+  }
   return execSync(`bash "${scriptPath}" ${args.map(a => `"${a.replace(/"/g, '\\"')}"`).join(" ")}`, {
     encoding: "utf-8",
     env: { ...process.env },
@@ -54,8 +64,8 @@ export const getCard = tool({
   args: {
     cardId: tool.schema.string().describe("ID of the Trello card to retrieve"),
   },
-  async execute(args, context) {
-    return run(context.worktree, ["get-card", "--card-id", args.cardId])
+  async execute(args) {
+    return run(["get-card", "--card-id", args.cardId])
   },
 })
 
@@ -64,16 +74,16 @@ export const searchCards = tool({
   args: {
     query: tool.schema.string().describe("Search query to find matching Trello cards"),
   },
-  async execute(args, context) {
-    return run(context.worktree, ["search-cards", "--query", args.query])
+  async execute(args) {
+    return run(["search-cards", "--query", args.query])
   },
 })
 
 export const getLists = tool({
   description: "Get trello lists with names and IDs",
   args: {},
-  async execute(_args, context) {
-    return run(context.worktree, ["get-lists"])
+  async execute() {
+    return run(["get-lists"])
   },
 })
 
@@ -83,8 +93,8 @@ export const move = tool({
     cardId: tool.schema.string().describe("ID of the Trello card to move"),
     listId: tool.schema.string().describe("ID of the Trello list to move the card to"),
   },
-  async execute(args, context) {
-    return run(context.worktree, ["move", "--card-id", args.cardId, "--list-id", args.listId])
+  async execute(args) {
+    return run(["move", "--card-id", args.cardId, "--list-id", args.listId])
   },
 })
 
@@ -95,8 +105,8 @@ export const createCard = tool({
     desc: tool.schema.string().describe("Description of the new card"),
     listId: tool.schema.string().describe("ID of the Trello list to create the card in"),
   },
-  async execute(args, context) {
-    return run(context.worktree, ["create-card", "--name", args.name, "--desc", args.desc, "--list-id", args.listId])
+  async execute(args) {
+    return run(["create-card", "--name", args.name, "--desc", args.desc, "--list-id", args.listId])
   },
 })
 
@@ -107,8 +117,8 @@ export const updateCard = tool({
     name: tool.schema.string().describe("New name for the card"),
     desc: tool.schema.string().describe("New description for the card"),
   },
-  async execute(args, context) {
-    return run(context.worktree, ["update-card", "--card-id", args.cardId, "--name", args.name, "--desc", args.desc])
+  async execute(args) {
+    return run(["update-card", "--card-id", args.cardId, "--name", args.name, "--desc", args.desc])
   },
 })
 
@@ -118,8 +128,8 @@ export const setLabel = tool({
     cardId: tool.schema.string().describe("ID of the Trello card to label"),
     labelId: tool.schema.string().describe("ID of the label to set on the card"),
   },
-  async execute(args, context) {
-    return run(context.worktree, ["set-label", "--card-id", args.cardId, "--label-id", args.labelId])
+  async execute(args) {
+    return run(["set-label", "--card-id", args.cardId, "--label-id", args.labelId])
   },
 })
 
@@ -129,8 +139,8 @@ export const removeLabel = tool({
     cardId: tool.schema.string().describe("ID of the Trello card to remove label from"),
     labelId: tool.schema.string().describe("ID of the label to remove from the card"),
   },
-  async execute(args, context) {
-    return run(context.worktree, ["remove-label", "--card-id", args.cardId, "--label-id", args.labelId])
+  async execute(args) {
+    return run(["remove-label", "--card-id", args.cardId, "--label-id", args.labelId])
   },
 })
 
@@ -140,8 +150,8 @@ export const createLabel = tool({
     name: tool.schema.string().describe("Name of the new label"),
     color: tool.schema.string().describe("Color of the new label"),
   },
-  async execute(args, context) {
-    return run(context.worktree, ["add-label", "--name", args.name, "--color", args.color])
+  async execute(args) {
+    return run(["add-label", "--name", args.name, "--color", args.color])
   },
 })
 
@@ -150,8 +160,8 @@ export const list = tool({
   args: {
     listId: tool.schema.string().describe("ID of the Trello list to list cards from"),
   },
-  async execute(args, context) {
-    return run(context.worktree, ["get-cards", "--list-id", args.listId])
+  async execute(args) {
+    return run(["get-cards", "--list-id", args.listId])
   },
 })
 
@@ -160,8 +170,8 @@ export const checklists = tool({
   args: {
     cardId: tool.schema.string().describe("ID of the Trello card to get checklists from"),
   },
-  async execute(args, context) {
-    return run(context.worktree, ["get-checklists", "--card-id", args.cardId])
+  async execute(args) {
+    return run(["get-checklists", "--card-id", args.cardId])
   },
 })
 
@@ -170,8 +180,8 @@ export const comments = tool({
   args: {
     cardId: tool.schema.string().describe("ID of the Trello card to get comments from"),
   },
-  async execute(args, context) {
-    return run(context.worktree, ["get-comments", "--card-id", args.cardId])
+  async execute(args) {
+    return run(["get-comments", "--card-id", args.cardId])
   },
 })
 
@@ -181,8 +191,8 @@ export const addComment = tool({
     cardId: tool.schema.string().describe("ID of the Trello card to add a comment to"),
     text: tool.schema.string().describe("Text of the comment to add"),
   },
-  async execute(args, context) {
-    return run(context.worktree, ["add-comment", "--card-id", args.cardId, "--text", args.text])
+  async execute(args) {
+    return run(["add-comment", "--card-id", args.cardId, "--text", args.text])
   },
 })
 
@@ -193,8 +203,8 @@ export const updateComment = tool({
     cardId: tool.schema.string().describe("ID of the Trello card containing the comment"),
     text: tool.schema.string().describe("New text of the comment"),
   },
-  async execute(args, context) {
-    return run(context.worktree, ["update-comment", "--comment-id", args.commentId, "--card-id", args.cardId, "--text", args.text])
+  async execute(args) {
+    return run(["update-comment", "--comment-id", args.commentId, "--card-id", args.cardId, "--text", args.text])
   },
 })
 

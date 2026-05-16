@@ -9,8 +9,8 @@ OpenCode Skill (trello-board)
   └─ SKILL.md — describes available operations to the agent
   └─ scripts/trello-call.sh — shell CLI that wraps Trello REST API
 
-OpenCode Custom Tool (trello-tool)
-  └─ trello-tool.ts — TypeScript tool calling trello-call.sh
+OpenCode Custom Tool (trello-board-tool)
+  └─ trello-board-tool.ts — TypeScript tool calling trello-call.sh
 
 Direct CLI:
   .opencode/skills/trello-board/scripts/trello-call.sh <command> [flags]
@@ -26,7 +26,7 @@ This will:
 
 1. Validate that the current project has `.opencode/`
 2. Create `.opencode/skills/trello-board/` with `SKILL.md` and `scripts/trello-call.sh`
-3. Install the `trello-tool` as a project-local custom tool in `.opencode/tools/`
+3. Install the `trello-board-tool` as a project-local custom tool in `.opencode/tools/`
 4. Write a `.version` file for future update checks
 
 ## Environment Variables
