@@ -19,16 +19,13 @@ done
 # Load .env if present (project root or skill directory)
 # ---------------------------------------------------------------------------
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "${SCRIPT_DIR}/../../../.." && pwd)"
 
-for env_file in "${REPO_ROOT}/.env" "${SCRIPT_DIR}/../.env" "${SCRIPT_DIR}/.env"; do
-  if [[ -f "$env_file" ]]; then
-    set -o allexport
-    # shellcheck source=/dev/null
-    source "$env_file"
-    set +o allexport
-  fi
-done
+if [[ -f "${SCRIPT_DIR}/.env" ]]; then
+  set -o allexport
+  # shellcheck source=/dev/null
+  source "${SCRIPT_DIR}/.env"
+  set +o allexport
+fi
 
 # ---------------------------------------------------------------------------
 # Configuration (from environment)

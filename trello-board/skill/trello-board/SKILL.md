@@ -69,18 +69,21 @@ User: "Comment a card then move it to Blocked"
 
 Required variables (`TRELLO_API_KEY`, `TRELLO_TOKEN`, `TRELLO_BOARD_ID`) must be set before using the tool. Column ID variables are optional and used to reference lists by name.
 
+`TRELLO_CALL_SCRIPT_PATH` is set automatically by `setup.sh` in `.opencode/skills/trello-board/scripts/.env`. Edit that file to configure your credentials.
+
 ```bash
-export TRELLO_API_KEY="your_api_key"
-export TRELLO_TOKEN="your_token"
-export TRELLO_BOARD_ID="your_board_id"
-export TRELLO_BACKLOG_COL="your_backlog_column_id"
-export TRELLO_TODO_COL="your_todo_column_id"
-export TRELLO_DOING_COL="your_doing_column_id"
-export TRELLO_TESTING_COL="your_testing_column_id"
-export TRELLO_CODE_REVIEW_COL="your_code_review_column_id"
-export TRELLO_DONE_COL="your_done_column_id"
-export TRELLO_BLOCKED_COL="your_blocked_column_id"
-export TRELLO_CANCELLED_COL="your_cancelled_column_id"
+TRELLO_CALL_SCRIPT_PATH=/path/to/.opencode/skills/trello-board/scripts/trello-call.sh  # set by setup.sh
+TRELLO_API_KEY=your_api_key
+TRELLO_TOKEN=your_token
+TRELLO_BOARD_ID=your_board_id
+TRELLO_BACKLOG_COL=your_backlog_column_id
+TRELLO_TODO_COL=your_todo_column_id
+TRELLO_DOING_COL=your_doing_column_id
+TRELLO_TESTING_COL=your_testing_column_id
+TRELLO_CODE_REVIEW_COL=your_code_review_column_id
+TRELLO_DONE_COL=your_done_column_id
+TRELLO_BLOCKED_COL=your_blocked_column_id
+TRELLO_CANCELLED_COL=your_cancelled_column_id
 ```
 
 If `TRELLO_API_KEY`, `TRELLO_TOKEN`, or `TRELLO_BOARD_ID` are missing or invalid, inform the user that the credentials are not configured and ask them to set the required environment variables before retrying.

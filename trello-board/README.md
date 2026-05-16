@@ -31,20 +31,21 @@ This will:
 
 ## Environment Variables
 
-The tool requires the following environment variables to authenticate with the Trello API:
+The tool requires the following environment variables. `TRELLO_CALL_SCRIPT_PATH` is written automatically by `setup.sh` into `.opencode/skills/trello-board/.env`. Edit that file to add your credentials.
 
-| Variable | Description |
-|---|---|
-| `TRELLO_API_KEY` | Your Trello API key |
-| `TRELLO_TOKEN` | Your Trello OAuth token |
-| `TRELLO_BOARD_ID` | The default Trello board ID to operate on |
-
-Set them in your project's `.env` file or export them in your shell.
+| Variable | Description | Set by |
+|---|---|---|
+| `TRELLO_CALL_SCRIPT_PATH` | Absolute path to the installed `trello-call.sh` | `setup.sh` (automatic) |
+| `TRELLO_API_KEY` | Your Trello API key | Manual |
+| `TRELLO_TOKEN` | Your Trello OAuth token | Manual |
+| `TRELLO_BOARD_ID` | The default Trello board ID to operate on | Manual |
 
 ```bash
-export TRELLO_API_KEY=your_api_key
-export TRELLO_TOKEN=your_token
-export TRELLO_BOARD_ID=your_board_id
+# .opencode/skills/trello-board/scripts/.env
+TRELLO_CALL_SCRIPT_PATH=/path/to/.opencode/skills/trello-board/scripts/trello-call.sh
+TRELLO_API_KEY=your_api_key
+TRELLO_TOKEN=your_token
+TRELLO_BOARD_ID=your_board_id
 ```
 
 ## Available Operations

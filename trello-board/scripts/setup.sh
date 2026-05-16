@@ -4,7 +4,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-VERSION="0.1.4"
+VERSION="0.1.5"
 CURRENT_VERSION="not-installed"
 
 SOURCE_SCRIPTS_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -99,7 +99,7 @@ detect_project_root() {
       SYSTEM_SKILL_DIR="${OPENCODE_DIR}/skills/trello-board"
       SYSTEM_SCRIPTS_DIR="${SYSTEM_SKILL_DIR}/scripts"
       SYSTEM_VERSIONFILE_PATH="${SYSTEM_SKILL_DIR}/.version"
-      SYSTEM_ENV_FILE="${SYSTEM_SKILL_DIR}/.env"
+      SYSTEM_ENV_FILE="${SYSTEM_SCRIPTS_DIR}/.env"
 
       OC_SKILLS_DIR="${OPENCODE_DIR}/skills"
       OC_TOOLS_DIR="${OPENCODE_DIR}/tools"
@@ -140,8 +140,8 @@ if [ -f "${SOURCE_SKILL_DIR}/SKILL.md" ]; then
   echo "[OK] Installed skill: trello-board (SKILL.md)"
 fi
 
-if [ -f "${SOURCE_SKILL_DIR}/scripts/trello-call.sh" ]; then
-  cp "${SOURCE_SKILL_DIR}/scripts/trello-call.sh" "${SYSTEM_SCRIPTS_DIR}/trello-call.sh"
+if [ -f "${SOURCE_SCRIPTS_DIR}/trello-call.sh" ]; then
+  cp "${SOURCE_SCRIPTS_DIR}/trello-call.sh" "${SYSTEM_SCRIPTS_DIR}/trello-call.sh"
   chmod +x "${SYSTEM_SCRIPTS_DIR}/trello-call.sh"
   echo "[OK] Installed script: trello-call.sh"
 fi
