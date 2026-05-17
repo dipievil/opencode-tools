@@ -12,6 +12,7 @@
   "include": [
     "job-manager-system/**/*.ts",
     "telegram-notify/**/*.ts",
+    "trello-board/**/*.ts",
     "tests/**/*.ts"
   ],
   "exclude": ["node_modules"]
