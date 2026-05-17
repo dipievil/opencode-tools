@@ -1,59 +1,8 @@
 import { tool } from "@opencode-ai/plugin"
-import { env } from "bun"
-import { existsSync } from "node:fs"
+import { existsSync, readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 
-interface TrelloLabel {
-  id: string
-  name: string
-  color: string
-}
-
-interface TrelloCover {
-  id: string
-  color: string
-  size: string
-  brightness: string
-}
-
-interface TrelloBadges {
-  attachmentsByType: {
-    trello: {
-      card: number
-    }
-  }
-  start: string
-  dueComplete: boolean
-}
-
-interface TrelloCard {
-  id: string
-  address: string
-  badges: TrelloBadges
-  checkItemStates: string[]
-  closed: boolean
-  creationMethod: string
-  desc: string
-  descData: { emoji: Record<string, unknown> }
-  due: string
-  idBoard: string
-  idChecklists: Array<{ id: string }>
-  idLabels: TrelloLabel[]
-  idList: string
-  idMembers: string[]
-  idShort: number
-  labels: string[]
-  name: string
-  shortLink: string
-  shortUrl: string
-  url: string
-  cover: TrelloCover
-}
-
-const PROJECT_ROOT = detectProjectRoot()
-const SCRIPT_PATH = `${PROJECT_ROOT}/.opencode/skills/trello-board/scripts/trello-call.sh`
-
-function detectProjectRoot(): string {
+function detectProjectRoot(): string | null {
   let dir = process.cwd()
   while (dir !== "/") {
     if (existsSync(join(dir, ".opencode"))) {
@@ -61,14 +10,81 @@ function detectProjectRoot(): string {
     }
     dir = dirname(dir)
   }
-  throw new Error("No .opencode directory found in current path or parents")
+  return null
 }
 
-async function run(args: string[]): Promise<string> {
+function loadEnvFile(): void {
+  const root = detectProjectRoot()
+  if (!root) return
+  const envPath = join(root, ".opencode", "skills", "trello-board", ".env")
+  if (!existsSync(envPath)) return
+  const content = readFileSync(envPath, "utf-8")
+  for (const line of content.split("\n")) {
+    const trimmed = line.trim()
+    if (!trimmed || trimmed.startsWith("#")) continue
+    const eqIdx = trimmed.indexOf("=")
+    if (eqIdx === -1) continue
+    const key = trimmed.slice(0, eqIdx).trim()
+    const value = trimmed.slice(eqIdx + 1).trim()
+    if (key && !process.env[key]) {
+      process.env[key] = value
+    }
+  }
+}
 
-  const result = await Bun.$`${SCRIPT_PATH}" ${args.map(a => `"${a.replace(/"/g, '\\"')}"`).join(" ")}`.env(env).text()
+loadEnvFile()
 
-  return result.trim()
+function requireCredentials() {
+  const apiKey = process.env.TRELLO_API_KEY
+  const token = process.env.TRELLO_TOKEN
+  if (!apiKey || !token) {
+    throw new Error("TRELLO_API_KEY and TRELLO_TOKEN must be set")
+  }
+  return { apiKey, token }
+}
+
+function authParams(): string {
+  const { apiKey, token } = requireCredentials()
+  return `key=${encodeURIComponent(apiKey)}&token=${encodeURIComponent(token)}`
+}
+
+async function apiGet<T>(path: string, extraParams = ""): Promise<T> {
+  const url = `https://api.trello.com/1${path}?${authParams()}${extraParams ? `&${extraParams}` : ""}`
+  const res = await fetch(url)
+  if (!res.ok) throw new Error(`Trello API error ${res.status}: ${await res.text()}`)
+  return res.json()
+}
+
+async function apiPost<T>(path: string, data: Record<string, unknown>): Promise<T> {
+  const url = `https://api.trello.com/1${path}?${authParams()}`
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) throw new Error(`Trello API error ${res.status}: ${await res.text()}`)
+  return res.json()
+}
+
+async function apiPut<T>(path: string, data: Record<string, unknown>): Promise<T> {
+  const url = `https://api.trello.com/1${path}?${authParams()}`
+  const res = await fetch(url, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) throw new Error(`Trello API error ${res.status}: ${await res.text()}`)
+  return res.json()
+}
+
+async function apiDelete(path: string): Promise<void> {
+  const url = `https://api.trello.com/1${path}?${authParams()}`
+  const res = await fetch(url, { method: "DELETE" })
+  if (!res.ok) throw new Error(`Trello API error ${res.status}: ${await res.text()}`)
+}
+
+function boardId(): string {
+  return process.env.TRELLO_BOARD_ID || ""
 }
 
 export const getCard = tool({
@@ -77,7 +93,11 @@ export const getCard = tool({
     cardId: tool.schema.string().describe("ID of the Trello card to retrieve"),
   },
   async execute(args) {
-    return run(["get-card", "--card-id", args.cardId])
+    const card = await apiGet<Record<string, unknown>>(`/cards/${args.cardId}`)
+    const fields = ["id", "name", "desc", "due", "url", "idList", "idBoard", "idLabels", "idChecklists", "shortUrl"]
+    const filtered: Record<string, unknown> = {}
+    for (const f of fields) filtered[f] = card[f]
+    return JSON.stringify(filtered)
   },
 })
 
@@ -87,7 +107,22 @@ export const searchCards = tool({
     query: tool.schema.string().describe("Search query to find matching Trello cards"),
   },
   async execute(args) {
-    return run(["search-cards", "--query", args.query])
+    const encoded = encodeURIComponent(args.query)
+    const boardParam = process.env.TRELLO_BOARD_ID ? `&idBoards=${process.env.TRELLO_BOARD_ID}` : ""
+    const result = await apiGet<{ cards: Record<string, unknown>[] }>(
+      "/search",
+      `query=${encoded}&modelTypes=cards${boardParam}`,
+    )
+    return JSON.stringify(
+      result.cards.map((c) => ({
+        id: c.id,
+        name: c.name,
+        desc: c.desc,
+        idList: c.idList,
+        url: c.url,
+        shortUrl: c.shortUrl,
+      })),
+    )
   },
 })
 
@@ -95,7 +130,10 @@ export const getLists = tool({
   description: "Get trello lists with names and IDs",
   args: {},
   async execute() {
-    return run(["get-lists"])
+    const bid = boardId()
+    if (!bid) throw new Error("TRELLO_BOARD_ID must be set")
+    const lists = await apiGet<Record<string, unknown>[]>(`/boards/${bid}/lists?fields=id,name`)
+    return JSON.stringify(lists.map((l) => ({ id: l.id, name: l.name })))
   },
 })
 
@@ -106,7 +144,8 @@ export const move = tool({
     listId: tool.schema.string().describe("ID of the Trello list to move the card to"),
   },
   async execute(args) {
-    return run(["move", "--card-id", args.cardId, "--list-id", args.listId])
+    const card = await apiPut<Record<string, unknown>>(`/cards/${args.cardId}`, { idList: args.listId })
+    return JSON.stringify({ id: card.id, name: card.name, idList: card.idList, url: card.url })
   },
 })
 
@@ -118,7 +157,12 @@ export const createCard = tool({
     listId: tool.schema.string().describe("ID of the Trello list to create the card in"),
   },
   async execute(args) {
-    return run(["create-card", "--name", args.name, "--desc", args.desc, "--list-id", args.listId])
+    const card = await apiPost<Record<string, unknown>>("/cards", {
+      name: args.name,
+      desc: args.desc,
+      idList: args.listId,
+    })
+    return JSON.stringify({ id: card.id, name: card.name, url: card.url })
   },
 })
 
@@ -130,7 +174,11 @@ export const updateCard = tool({
     desc: tool.schema.string().describe("New description for the card"),
   },
   async execute(args) {
-    return run(["update-card", "--card-id", args.cardId, "--name", args.name, "--desc", args.desc])
+    const payload: Record<string, unknown> = {}
+    if (args.name) payload.name = args.name
+    if (args.desc) payload.desc = args.desc
+    const card = await apiPut<Record<string, unknown>>(`/cards/${args.cardId}`, payload)
+    return JSON.stringify({ id: card.id, name: card.name, desc: card.desc, url: card.url })
   },
 })
 
@@ -141,7 +189,7 @@ export const setLabel = tool({
     labelId: tool.schema.string().describe("ID of the label to set on the card"),
   },
   async execute(args) {
-    return run(["set-label", "--card-id", args.cardId, "--label-id", args.labelId])
+    return JSON.stringify(await apiPost<Record<string, unknown>>(`/cards/${args.cardId}/idLabels`, { value: args.labelId }))
   },
 })
 
@@ -152,7 +200,8 @@ export const removeLabel = tool({
     labelId: tool.schema.string().describe("ID of the label to remove from the card"),
   },
   async execute(args) {
-    return run(["remove-label", "--card-id", args.cardId, "--label-id", args.labelId])
+    await apiDelete(`/cards/${args.cardId}/idLabels/${args.labelId}`)
+    return JSON.stringify({ removed: args.labelId })
   },
 })
 
@@ -163,7 +212,14 @@ export const createLabel = tool({
     color: tool.schema.string().describe("Color of the new label"),
   },
   async execute(args) {
-    return run(["add-label", "--name", args.name, "--color", args.color])
+    const bid = boardId()
+    if (!bid) throw new Error("TRELLO_BOARD_ID must be set")
+    const label = await apiPost<Record<string, unknown>>("/labels", {
+      name: args.name,
+      color: args.color,
+      idBoard: bid,
+    })
+    return JSON.stringify({ id: label.id, name: label.name, color: label.color })
   },
 })
 
@@ -173,7 +229,20 @@ export const list = tool({
     listId: tool.schema.string().describe("ID of the Trello list to list cards from"),
   },
   async execute(args) {
-    return run(["get-cards", "--list-id", args.listId])
+    const cards = await apiGet<Record<string, unknown>[]>(
+      `/lists/${args.listId}/cards?fields=id,name,desc,due,url,idLabels,idChecklists`,
+    )
+    return JSON.stringify(
+      cards.map((c) => ({
+        id: c.id,
+        name: c.name,
+        desc: c.desc,
+        due: c.due,
+        url: c.url,
+        idLabels: c.idLabels,
+        idChecklists: c.idChecklists,
+      })),
+    )
   },
 })
 
@@ -183,7 +252,18 @@ export const checklists = tool({
     cardId: tool.schema.string().describe("ID of the Trello card to get checklists from"),
   },
   async execute(args) {
-    return run(["get-checklists", "--card-id", args.cardId])
+    const cl = await apiGet<Record<string, unknown>[]>(`/cards/${args.cardId}/checklists`)
+    return JSON.stringify(
+      cl.map((c) => ({
+        id: c.id,
+        name: c.name,
+        checkItems: (c.checkItems as Array<Record<string, unknown>>).map((i) => ({
+          id: i.id,
+          name: i.name,
+          state: i.state,
+        })),
+      })),
+    )
   },
 })
 
@@ -193,7 +273,17 @@ export const comments = tool({
     cardId: tool.schema.string().describe("ID of the Trello card to get comments from"),
   },
   async execute(args) {
-    return run(["get-comments", "--card-id", args.cardId])
+    const actions = await apiGet<Record<string, unknown>[]>(
+      `/cards/${args.cardId}/actions?filter=commentCard`,
+    )
+    return JSON.stringify(
+      actions.map((a) => ({
+        id: a.id,
+        date: a.date,
+        text: (a.data as Record<string, unknown>).text,
+        memberCreator: (a.memberCreator as Record<string, unknown>).username,
+      })),
+    )
   },
 })
 
@@ -204,7 +294,14 @@ export const addComment = tool({
     text: tool.schema.string().describe("Text of the comment to add"),
   },
   async execute(args) {
-    return run(["add-comment", "--card-id", args.cardId, "--text", args.text])
+    const result = await apiPost<Record<string, unknown>>(`/cards/${args.cardId}/actions/comments`, {
+      text: args.text,
+    })
+    return JSON.stringify({
+      id: result.id,
+      date: result.date,
+      text: (result.data as Record<string, unknown>).text,
+    })
   },
 })
 
@@ -216,14 +313,14 @@ export const updateComment = tool({
     text: tool.schema.string().describe("New text of the comment"),
   },
   async execute(args) {
-    return run(["update-comment", "--comment-id", args.commentId, "--card-id", args.cardId, "--text", args.text])
+    const result = await apiPut<Record<string, unknown>>(
+      `/cards/${args.cardId}/actions/${args.commentId}/comments`,
+      { text: args.text },
+    )
+    return JSON.stringify({
+      id: result.id,
+      date: result.date,
+      text: (result.data as Record<string, unknown>).text,
+    })
   },
 })
-
-interface TrelloCover {
-  idAttachment: string
-  color: string
-  idUploadedBackground: string
-  size: string
-  brightness: string
-}

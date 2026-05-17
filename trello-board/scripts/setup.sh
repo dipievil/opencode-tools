@@ -4,7 +4,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-VERSION="0.1.7"
+VERSION="0.1.8"
 CURRENT_VERSION="not-installed"
 
 SOURCE_SCRIPTS_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -26,7 +26,6 @@ FORCE_INSTALL=false
 # Trello skill paths (set after detecting project root)
 SYSTEM_SKILL_DIR=""
 SYSTEM_VERSIONFILE_PATH=""
-SYSTEM_SCRIPTS_DIR=""
 
 usage() {
   cat <<EOF
@@ -97,9 +96,8 @@ detect_project_root() {
       OPENCODE_DIR="${PROJECT_ROOT}/.opencode"
 
       SYSTEM_SKILL_DIR="${OPENCODE_DIR}/skills/trello-board"
-      SYSTEM_SCRIPTS_DIR="${SYSTEM_SKILL_DIR}/scripts"
+      SYSTEM_ENV_FILE="${SYSTEM_SKILL_DIR}/.env"
       SYSTEM_VERSIONFILE_PATH="${SYSTEM_SKILL_DIR}/.version"
-      SYSTEM_ENV_FILE="${SYSTEM_SCRIPTS_DIR}/.env"
 
       OC_SKILLS_DIR="${OPENCODE_DIR}/skills"
       OC_TOOLS_DIR="${OPENCODE_DIR}/tools"
@@ -132,7 +130,7 @@ fi
 
 echo "[INFO] Installing new version. New version: ${VERSION}"
 
-mkdir -p "${SYSTEM_SKILL_DIR}" "${SYSTEM_SCRIPTS_DIR}" "${OC_TOOLS_DIR}"
+mkdir -p "${SYSTEM_SKILL_DIR}" "${OC_TOOLS_DIR}"
 echo "[OK] Created ${SYSTEM_SKILL_DIR}"
 
 if [ -f "${SOURCE_SKILL_DIR}/SKILL.md" ]; then
@@ -140,27 +138,20 @@ if [ -f "${SOURCE_SKILL_DIR}/SKILL.md" ]; then
   echo "[OK] Installed skill: trello-board (SKILL.md)"
 fi
 
-if [ -f "${SOURCE_SCRIPTS_DIR}/trello-call.sh" ]; then
-  cp "${SOURCE_SCRIPTS_DIR}/trello-call.sh" "${SYSTEM_SCRIPTS_DIR}/trello-call.sh"
-  chmod +x "${SYSTEM_SCRIPTS_DIR}/trello-call.sh"
-  echo "[OK] Installed script: trello-call.sh"
-fi
-
 if [ -f "${SOURCE_TOOLS_DIR}/trello-board-tool.ts" ]; then
   cp "${SOURCE_TOOLS_DIR}/trello-board-tool.ts" "${OC_TOOLS_DIR}/trello-board-tool.ts"
   echo "[OK] Installed opencode custom tool: trello-board-tool"
 fi
 
-# Create or update .env file with script path and credential placeholders
-
 if [ ! -f "${SYSTEM_ENV_FILE}" ]; then
   {
+    echo "# Trello credentials - edit with your values"
     echo "TRELLO_API_KEY=your_trello_api_key_here"
     echo "TRELLO_TOKEN=your_trello_token_here"
     echo "TRELLO_BOARD_ID=your_trello_board_id_here"
   } > "${SYSTEM_ENV_FILE}"
   echo "[OK] Created environment file: ${SYSTEM_ENV_FILE}"
-  echo "[WARN] Please update ${SYSTEM_ENV_FILE} with your Trello API key, token, and board ID before using the tool."
+  echo "[WARN] Edit ${SYSTEM_ENV_FILE} with your Trello API key, token, and board ID."
 fi
 
 echo "version: ${VERSION}" > "${SYSTEM_VERSIONFILE_PATH}"
@@ -173,12 +164,11 @@ cat <<EOF
   Project root:    ${PROJECT_ROOT}
   OpenCode dir:    ${OPENCODE_DIR}
   Skill directory: ${SYSTEM_SKILL_DIR}
-  Scripts:         ${SYSTEM_SCRIPTS_DIR}/trello-call.sh
   Custom tool:     ${OC_TOOLS_DIR}/trello-board-tool.ts
 
 Environment:
-  Set TRELLO_API_KEY and TRELLO_TOKEN in your project's .env file
-  or export them in your shell before using the tool.
+  Edit ${SYSTEM_ENV_FILE} with your Trello API key, token, and board ID.
+  The tool loads this file automatically on startup.
 
 OpenCode Integration:
   Skill:  trello-board (installed at .opencode/skills/trello-board/)
