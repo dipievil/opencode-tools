@@ -1,15 +1,15 @@
 # OpenCode Trello Board
 
-Trello board and card management for OpenCode projects. Provides a skill and custom tool to interact with Trello boards, lists, cards, labels, checklists, and comments.
+Trello board and card management for OpenCode projects. Provides a skill that uses the Trello MCP server to interact with boards, lists, cards, labels, checklists, and comments.
 
 ## Architecture
 
 ```plaintext
 OpenCode Skill (trello-board)
-  └─ SKILL.md — describes available operations to the agent
+  └─ SKILL.md — describes available Trello MCP tools to the agent
 
-OpenCode Custom Tool (trello-board-tool)
-  └─ trello-board-tool.ts — TypeScript tool that calls the Trello REST API directly
+Trello MCP Server
+  └─ Provides tools like trello_get_card, trello_add_card_to_list, etc.
 ```
 
 ## Setup
@@ -21,65 +21,63 @@ OpenCode Custom Tool (trello-board-tool)
 This will:
 
 1. Validate that the current project has `.opencode/`
-2. Create `.opencode/skills/trello-board/` with `SKILL.md`
-3. Install the `trello-board-tool` as a project-local custom tool in `.opencode/tools/`
-4. Write a `.version` file for future update checks
+2. Copy `SKILL.md` to `.opencode/skills/trello-board/`
+3. Write a `.version` file for future update checks
 
-## Environment Variables
+### Prerequisites
 
-The tool loads credentials from `.opencode/skills/trello-board/.env` (created by `setup.sh`). Edit that file with your Trello credentials:
-
-| Variable | Description |
-|---|---|
-| `TRELLO_API_KEY` | Your Trello API key |
-| `TRELLO_TOKEN` | Your Trello OAuth token |
-| `TRELLO_BOARD_ID` | The default Trello board ID to operate on |
+The Trello MCP server must be configured in your `opencode.json`. The skill relies on MCP tools being available — no additional environment variables or custom tools are needed.
 
 ## Available Operations
 
-### Cards
+The skill exposes Trello operations via MCP tools. Key operations include:
 
-| Operation | Description |
-|---|---|
-| `get-card --card-id <id>` | Get card details |
-| `search-cards --query "<text>"` | Search cards by name |
-| `get-cards --list-id <id>` | List all cards in a list |
-| `create-card --name "<title>" --desc "<desc>" --list-id <id>` | Create a new card |
-| `update-card --card-id <id> --name "<title>" --desc "<desc>"` | Update a card |
-| `move --card-id <id> --list-id <id>` | Move a card to another list |
+### Boards
+- `trello_list_boards` — List all Trello boards
+- `trello_get_active_board_info` — Get active board details
 
 ### Lists
+- `trello_get_lists` — Get lists on a board
+- `trello_add_list_to_board` — Add a new list
 
-| Operation | Description |
-|---|---|
-| `get-lists` | Get all lists on the board |
+### Cards
+- `trello_get_card` — Get card details
+- `trello_get_cards_by_list_id` — List cards in a list
+- `trello_add_card_to_list` — Create a new card
+- `trello_move_card` — Move a card to another list
+- `trello_update_card_details` — Update a card
+- `trello_archive_card` — Archive a card
+- `trello_assign_member_to_card` — Assign a member to a card
 
 ### Labels
+- `trello_get_board_labels` — Get board labels
+- `trello_create_label` — Create a label
+- `trello_update_label` — Update a label
 
-| Operation | Description |
-|---|---|
-| `add-label --name "<name>" --color <color>` | Create a label |
-| `set-label --card-id <id> --label-id <id>` | Attach a label to a card |
-| `remove-label --card-id <id> --label-id <id>` | Remove a label from a card |
+### Checklists
+- `trello_create_checklist` — Create a checklist
+- `trello_add_checklist_item` — Add a checklist item
+- `trello_update_checklist_item` — Update checklist item state
 
-### Checklists & Comments
+### Comments
+- `trello_get_card_comments` — Get card comments
+- `trello_add_comment` — Add a comment
+- `trello_update_comment` — Update a comment
+- `trello_delete_comment` — Delete a comment
 
-| Operation | Description |
-|---|---|
-| `get-checklists --card-id <id>` | Get checklists on a card |
-| `get-comments --card-id <id>` | Get comments on a card |
-| `add-comment --card-id <id> --text "<text>"` | Add a comment to a card |
-| `update-comment --comment-id <id> --text "<text>"` | Update a comment |
+### Attachments
+- `trello_attach_file_to_card` — Attach a file from a URL
+- `trello_attach_image_to_card` — Attach an image from a URL
 
 ## OpenCode Integration
 
 The skill is automatically activated when the agent detects Trello-related requests:
 
 ```bash
+opencode run "list my boards"
 opencode run "list cards in my TODO list"
 opencode run "create a card called 'Fix login bug' in the Doing list"
 opencode run "move card X to Done"
-opencode run "add a comment to card Y saying the fix is deployed"
 ```
 
 ## Version Control

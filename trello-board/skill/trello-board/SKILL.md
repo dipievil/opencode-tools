@@ -7,86 +7,94 @@ compatibility: opencode
 
 # Trello Board management skill
 
-Manage a specific Trello board, its lists, and cards using the `trello-board-tool`.
+Manage Trello boards, lists, and cards using the built-in Trello MCP tools.
 
-## Available Tools
+## Boards
 
-- **trello-board-tool**: Manages Trello boards, lists, cards, labels, checklists, and comments by calling the Trello REST API directly.
+| Operation | Tool |
+|---|---|
+| List all boards | `trello_list_boards` |
+| Get active board info | `trello_get_active_board_info` |
 
-### Tool Functions
+## Lists
 
-| Function | Description | Arguments |
-|---|---|---|
-| `getCard` | Get card details by ID | `cardId` |
-| `searchCards` | Search cards by name query | `query` |
-| `getLists` | Get all lists on the board | (none) |
-| `move` | Move card to another list | `cardId`, `listId` |
-| `createCard` | Create a new card | `name`, `desc`, `listId` |
-| `updateCard` | Update card name/description | `cardId`, `name`, `desc` |
-| `list` | List all cards in a list | `listId` |
-| `setLabel` | Attach a label to a card | `cardId`, `labelId` |
-| `removeLabel` | Remove a label from a card | `cardId`, `labelId` |
-| `createLabel` | Create a new label on the board | `name`, `color` |
-| `checklists` | Get checklists on a card | `cardId` |
-| `comments` | Get comments on a card | `cardId` |
-| `addComment` | Add a comment to a card | `cardId`, `text` |
-| `updateComment` | Update an existing comment | `commentId`, `cardId`, `text` |
+| Operation | Tool |
+|---|---|
+| Get board lists | `trello_get_lists` (pass boardId) |
+| Add list to board | `trello_add_list_to_board` (pass name) |
+
+## Cards
+
+| Operation | Tool |
+|---|---|
+| Get card details | `trello_get_card` (pass cardId) |
+| List cards in a list | `trello_get_cards_by_list_id` (pass listId) |
+| Create card | `trello_add_card_to_list` (pass listId, name) |
+| Move card | `trello_move_card` (pass cardId, listId) |
+| Update card | `trello_update_card_details` (pass cardId) |
+| Archive card | `trello_archive_card` (pass cardId) |
+| Assign member | `trello_assign_member_to_card` (pass cardId, memberId) |
+
+## Labels
+
+| Operation | Tool |
+|---|---|
+| Get board labels | `trello_get_board_labels` |
+| Create label | `trello_create_label` (pass name, color) |
+| Update label | `trello_update_label` (pass labelId) |
+
+## Checklists
+
+| Operation | Tool |
+|---|---|
+| Get card checklists | `trello_get_checklist_items` / `trello_get_checklist_by_name` |
+| Create checklist | `trello_create_checklist` (pass cardId, name) |
+| Add checklist item | `trello_add_checklist_item` (pass text, checkListName) |
+| Update checklist item | `trello_update_checklist_item` (pass cardId, checkItemId, state) |
+
+## Comments
+
+| Operation | Tool |
+|---|---|
+| Get card comments | `trello_get_card_comments` (pass cardId) |
+| Add comment | `trello_add_comment` (pass cardId, text) |
+| Update comment | `trello_update_comment` (pass commentId, text) |
+| Delete comment | `trello_delete_comment` (pass commentId) |
+
+## Attachments
+
+| Operation | Tool |
+|---|---|
+| Attach file from URL | `trello_attach_file_to_card` (pass cardId, fileUrl) |
+| Attach image from URL | `trello_attach_image_to_card` (pass cardId, imageUrl) |
 
 ## Usage Examples
 
+User: "What boards do I have?"
+1. List boards with `trello_list_boards`
+
 User: "Add a card to my TODO list"
-1. Look up the TODO list ID with `getLists`
-2. Create card with `createCard(name="Card title", desc="Card description", listId=<list_id>)`
+1. Get the TODO list ID with `trello_get_lists`
+2. Create card with `trello_add_card_to_list` (pass listId, name)
 
 User: "Move card X to Done"
-1. Find the card ID with `list(listId=<list_id>)`
-2. Move card with `move(cardId=<card_id>, listId=<done_list_id>)`
+1. Find the card ID with `trello_get_cards_by_list_id`
+2. Get the Done list ID with `trello_get_lists`
+3. Move card with `trello_move_card` (pass cardId, listId)
 
 User: "What cards are in Doing?"
-1. List cards with `list(listId=<doing_list_id>)`
+1. Get the Doing list ID with `trello_get_lists`
+2. List cards with `trello_get_cards_by_list_id` (pass listId)
 
-User: "Update card X description"
-1. Find card ID with `list(listId=<list_id>)`
-2. Update card with `updateCard(cardId=<card_id>, desc="New description")`
-
-User: "Comment on a card then move it to Blocked"
-1. Find card ID with `list(listId=<list_id>)`
-2. Add comment with `addComment(cardId=<card_id>, text="This is a comment")`
-3. Move card with `move(cardId=<card_id>, listId=<blocked_list_id>)`
-
-## Environment Setup
-
-The tool loads credentials automatically from `.opencode/skills/trello-board/.env` (created by `setup.sh`). Edit that file to configure your settings.
-
-```bash
-TRELLO_API_KEY=your_trello_api_key_here
-TRELLO_TOKEN=your_trello_token_here
-TRELLO_BOARD_ID=your_trello_board_id_here
-```
-
-Column ID variables are optional and used to reference lists by name:
-
-```bash
-TRELLO_BACKLOG_COL=your_backlog_column_id
-TRELLO_TODO_COL=your_todo_column_id
-TRELLO_DOING_COL=your_doing_column_id
-TRELLO_TESTING_COL=your_testing_column_id
-TRELLO_CODE_REVIEW_COL=your_code_review_column_id
-TRELLO_DONE_COL=your_done_column_id
-TRELLO_BLOCKED_COL=your_blocked_column_id
-TRELLO_CANCELLED_COL=your_cancelled_column_id
-```
-
-If `TRELLO_API_KEY`, `TRELLO_TOKEN`, or `TRELLO_BOARD_ID` are missing or invalid, inform the user that the credentials are not configured and ask them to check `.opencode/skills/trello-board/.env` before retrying.
+User: "Comment a card then move it to Blocked"
+1. Find card ID with `trello_get_cards_by_list_id`
+2. Add comment with `trello_add_comment` (pass cardId, text)
+3. Get Blocked list ID with `trello_get_lists`
+4. Move card with `trello_move_card` (pass cardId, listId)
 
 ## Tips
 
-- Find list IDs using `getLists`, or extract from the Trello board URL.
-- Find card IDs using `list(listId=<list_id>)`, or extract from the card URL.
-- Use consistent naming conventions for cards to make them easier to find and manage.
-- Cards support markdown in descriptions.
-- Labels, due dates, and attachments available.
-
-## RULES
-
-- If the tool returns an error, respond with "Sorry, I couldn't perform that action." and stop immediately.
+- List IDs can be found by listing boards then getting lists for the active board
+- Card IDs can be found by listing cards in a list
+- Use consistent naming conventions for cards to make them easier to find and manage
+- Cards support markdown in descriptions
