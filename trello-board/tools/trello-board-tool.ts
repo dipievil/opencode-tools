@@ -1,5 +1,7 @@
 import { tool } from "@opencode-ai/plugin"
-import { execSync } from "node:child_process"
+import { env } from "bun"
+import { existsSync } from "node:fs"
+import { dirname, join } from "node:path"
 
 interface TrelloLabel {
   id: string
@@ -48,15 +50,25 @@ interface TrelloCard {
   cover: TrelloCover
 }
 
-function run(args: string[]): string {
-  const scriptPath = process.env.TRELLO_CALL_SCRIPT_PATH
-  if (!scriptPath) {
-    throw new Error("TRELLO_CALL_SCRIPT_PATH is not set. Run the trello-board setup.sh to configure the tool.")
+const PROJECT_ROOT = detectProjectRoot()
+const SCRIPT_PATH = `${PROJECT_ROOT}/.opencode/skills/trello-board/scripts/trello-call.sh`
+
+function detectProjectRoot(): string {
+  let dir = process.cwd()
+  while (dir !== "/") {
+    if (existsSync(join(dir, ".opencode"))) {
+      return dir
+    }
+    dir = dirname(dir)
   }
-  return execSync(`bash "${scriptPath}" ${args.map(a => `"${a.replace(/"/g, '\\"')}"`).join(" ")}`, {
-    encoding: "utf-8",
-    env: { ...process.env },
-  }).trim()
+  throw new Error("No .opencode directory found in current path or parents")
+}
+
+async function run(args: string[]): Promise<string> {
+
+  const result = await Bun.$`${SCRIPT_PATH}" ${args.map(a => `"${a.replace(/"/g, '\\"')}"`).join(" ")}`.env(env).text()
+
+  return result.trim()
 }
 
 export const getCard = tool({
