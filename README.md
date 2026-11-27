@@ -9,6 +9,7 @@ Tooling collection for OpenCode workflows.
 
 - `job-manager-system/`: cron job manager toolkit (scripts, templates, and tool integration)
 - `telegram-notify/`: Telegram notification tool and setup scripts
+- `openchamber/commands/`: global OpenCode/OpenChamber slash commands
 
 ## Requirements
 
@@ -46,6 +47,26 @@ bun test
 ```bash
 ./telegram-notify/scripts/setup.sh
 ```
+
+### OpenChamber commands
+
+The `openchamber/commands/` folder holds the global slash commands used in OpenCode/OpenChamber. Each Markdown file becomes a command named after the file; its front matter sets the description and whether it runs in a subagent.
+
+| Command | Description |
+| --- | --- |
+| `/code-review` | Reviews the oldest unreviewed open GitHub PR, comments inline on issues, creates backlog cards for out-of-scope findings, and notifies Telegram. |
+| `/task-management` | Audits and rebalances the Board cards for the `retro-shmup` project and reports blockers on Telegram. |
+
+Plannotator commands are intentionally excluded; Plannotator is provided as an extension, not as a slash command in this repository.
+
+Copy them to the global commands directory to make them available in every project:
+
+```bash
+mkdir -p ~/.config/opencode/commands
+cp openchamber/commands/*.md ~/.config/opencode/commands/
+```
+
+`code-review` and `task-management` need GitHub/Trello access and the Telegram notifier configured above.
 
 ## Contributing
 
